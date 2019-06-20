@@ -1,0 +1,16 @@
+PODS:
+  - RRemoteConfig (0.0.1)
+
+DEPENDENCIES:
+  - RRemoteConfig (from `./RRemoteConfig.podspec`)
+
+EXTERNAL SOURCES:
+  RRemoteConfig:
+    :path: "./RRemoteConfig.podspec"
+
+SPEC CHECKSUMS:
+  RRemoteConfig: ecd7a2a05255047c5475a6aa363e300e4576d9a5
+
+PODFILE CHECKSUM: af7699c6932249f840a4a306a823aa26d21b2a1f
+
+COCOAPODS: 1.6.1
