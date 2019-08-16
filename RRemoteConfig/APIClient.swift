@@ -17,28 +17,28 @@ internal class APIClient {
         self.session = session
     }
 
-    func send<T>(request: URLRequest, decodeAs: T.Type, completionHandler: @escaping (Result<Any, Error>, _ httpResponse: HTTPURLResponse?) -> Void) where T: Decodable {
+    func send<T>(request: URLRequest, decodeAs: T.Type, completionHandler: @escaping (Result<Any, Error>, _ httpResponse: HTTPURLResponse?, _ httpData: Data?) -> Void) where T: Decodable {
 
         session.startTask(with: request) { (data, response, error) in
             let httpResponse = response as? HTTPURLResponse
-            guard let data = data else {
+            guard data != nil else {
                 if let error = error {
-                    return completionHandler(.failure(error), httpResponse)
+                    return completionHandler(.failure(error), httpResponse, data)
                 } else {
                     let serverError = NSError.serverError(code: httpResponse?.statusCode ?? 0, message: "Unspecified server error occurred")
-                    return completionHandler(.failure(serverError), httpResponse)
+                    return completionHandler(.failure(serverError), httpResponse, data)
                 }
             }
             let decoder = JSONDecoder()
             do {
-                let config = try decoder.decode(decodeAs, from: data)
-                completionHandler(.success(config), httpResponse)
+                let result = try decoder.decode(decodeAs, from: data ?? Data())
+                completionHandler(.success(result), httpResponse, data)
             } catch let parseError {
                 do {
-                    let errorModel = try decoder.decode(APIError.self, from: data)
-                    completionHandler(.failure(NSError.serverError(code: errorModel.code, message: errorModel.message)), httpResponse)
+                    let errorModel = try decoder.decode(APIError.self, from: data ?? Data())
+                    completionHandler(.failure(NSError.serverError(code: errorModel.code, message: errorModel.message)), httpResponse, data)
                 } catch {
-                    completionHandler(.failure(parseError), httpResponse)
+                    completionHandler(.failure(parseError), httpResponse, data)
                 }
             }
         }

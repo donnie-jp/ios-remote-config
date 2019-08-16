@@ -16,11 +16,12 @@ internal class Fetcher {
         request.addHeader("apiKey", "ras-\(environment.subscriptionKey)")
         request.setExtraHeaders(from: environment)
 
-        apiClient.send(request: request, decodeAs: ConfigModel.self) { (result, response) in
+        apiClient.send(request: request, decodeAs: ConfigModel.self) { (result, response, data) in
             switch result {
             case .success(let resultConfig):
                 var config = resultConfig as? ConfigModel
                 config?.signature = response?.allHeaderFields["Signature"] as? String
+                config?.jsonString = String(data: data ?? Data(), encoding: .utf8)
                 completionHandler(config)
             case .failure(let error):
                 print("Config fetch \(String(describing: request.url)) result is error \(error.localizedDescription) and response \(String(describing: response))")
@@ -36,7 +37,7 @@ internal class Fetcher {
         var request = URLRequest(url: url)
         request.addHeader("apiKey", "ras-\(environment.subscriptionKey)")
 
-        apiClient.send(request: request, decodeAs: KeyModel.self) { (result, response) in
+        apiClient.send(request: request, decodeAs: KeyModel.self) { (result, response, _) in
             switch result {
             case .success(let keyModel):
                 completionHandler(keyModel as? KeyModel)

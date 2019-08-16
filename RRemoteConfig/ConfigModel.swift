@@ -2,6 +2,7 @@ internal struct ConfigModel: Decodable {
     let config: [String: String]
     let keyId: String
     var signature: String?
+    var jsonString: String?
 
     init(config: [String: String],
          keyId: String = "") {

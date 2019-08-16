@@ -29,7 +29,10 @@ internal class ConfigCache {
                 print("Config read from cache plist \(cacheUrl): \(dictionary)")
                 #endif
 
-                guard let configDic = dictionary["config"] as? [String: String] else {
+                guard let configString = dictionary["config"] as? String,
+                    let configData = configString.data(using: .utf8),
+                    let configDic = try? JSONSerialization.jsonObject(with: configData, options: []) as? [String: String] else {
+                    print("Cache contents invalid")
                     return
                 }
                 var configModel = ConfigModel(config: configDic, keyId: dictionary["keyId"] as? String ?? "")
@@ -41,6 +44,8 @@ internal class ConfigCache {
                 } else {
                     print("Cached dictionary contents failed verification")
                 }
+            } else {
+                print("No cache found")
             }
         }
     }
@@ -54,7 +59,7 @@ internal class ConfigCache {
                 self.verifyContents(model: configModel, resultHandler: { (verified) in
                     if verified {
                         let dictionary = [
-                            "config": configModel.config,
+                            "config": configModel.jsonString as Any,
                             "keyId": configModel.keyId as Any,
                             "signature": configModel.signature as Any
                         ]
@@ -90,30 +95,34 @@ extension ConfigCache {
     // synchronous verification with local key store
     func verifyContents(model: ConfigModel) -> Bool {
         guard let key = keyStore.key(for: model.keyId),
-            let signature = model.signature else {
+            let signature = model.signature,
+            let data = model.jsonString?.data(using: .utf8) else {
             return false
         }
         return self.verifier.verify(signatureBase64: signature,
-                                    dictionary: model.config,
+                                    objectData: data,
                                     keyBase64: key)
     }
 
     // asynchronous verification - fetches key from backend if key is not
     // found in local key store
     func verifyContents(model: ConfigModel, resultHandler: @escaping (Bool) -> Void ) {
-        if let key = keyStore.key(for: model.keyId) {
+        if let data = model.jsonString?.data(using: .utf8), let key = keyStore.key(for: model.keyId) {
             let verified = self.verifier.verify(signatureBase64: model.signature ?? "",
-                                                dictionary: model.config,
+                                                objectData: data,
                                                 keyBase64: key)
             resultHandler(verified)
         } else {
             fetcher.fetchKey(with: model.keyId) { (keyModel) in
-                guard let key = keyModel?.key, keyModel?.id == model.keyId else {
+                guard
+                    let data = model.jsonString?.data(using: .utf8),
+                    let key = keyModel?.key,
+                    keyModel?.id == model.keyId else {
                     return resultHandler(false)
                 }
                 self.keyStore.addKey(key: key, for: model.keyId)
                 let verified = self.verifier.verify(signatureBase64: model.signature ?? "",
-                                                    dictionary: model.config,
+                                                    objectData: data,
                                                     keyBase64: key)
                 resultHandler(verified)
             }
