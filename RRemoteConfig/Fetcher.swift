@@ -7,10 +7,8 @@ internal class Fetcher {
         self.apiClient = client
         self.environment = environment
     }
-}
 
-// MARK: Fetch Config
-extension Fetcher {
+    // MARK: Fetch Config
     func fetchConfig(completionHandler: @escaping (ConfigModel?) -> Void) {
         guard let url = environment.configUrl else {
             return completionHandler(nil)
@@ -22,7 +20,11 @@ extension Fetcher {
             switch result {
             case .success(let response):
                 var config = response.object as? ConfigModel
-                config?.signature = response.httpResponse.allHeaderFields["Signature"] as? String
+                let headers = response.httpResponse.allHeaderFields as? [String: String]
+                config?.signature = headers?["Signature"]
+                if let etag = headers?["ETag"] {
+                    self.environment.etag = etag
+                }
                 completionHandler(config)
             case .failure(let error):
                 Logger.e("Config fetch \(String(describing: request.url)) error occurred: \(error.localizedDescription)")
@@ -30,10 +32,8 @@ extension Fetcher {
             }
         }
     }
-}
 
-// MARK: Fetch Key
-extension Fetcher {
+    // MARK: Fetch Key
     func fetchKey(with keyId: String, completionHandler: @escaping (KeyModel?) -> Void) {
         guard let url = environment.keyUrl(with: keyId) else {
             return completionHandler(nil)

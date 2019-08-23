@@ -37,13 +37,11 @@ class ConfigCacheSpec: QuickSpec {
                 let url = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("foo")
                 let verifier = VerifierMock()
                 let fetcher = Fetcher(client: APIClient(), environment: Environment())
+                let jsonData = (try? JSONSerialization.data(withJSONObject: ["body": ["foo": "bar"]], options: []))!
 
                 beforeEach {
                     NSDictionary(dictionary:
-                        ["config":
-                            [
-                                "foo": "bar"
-                            ],
+                        ["config": jsonData,
                          "keyId": "1234",
                          "signature": "sigfoo"
                         ]).write(to: url, atomically: true)
@@ -228,6 +226,7 @@ class ConfigCacheSpec: QuickSpec {
             }
         }
         describe("refreshFromRemote function") {
+            let jsonData = (try? JSONSerialization.data(withJSONObject: ["body": ["foo": "bar"], "keyId": "aKey"], options: []))!
             let fetcher = FetcherMock(client: APIClient(), environment: Environment())
             let configCache = ConfigCache(fetcher: fetcher, poller: Poller())
             let url = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("foo")
@@ -248,8 +247,8 @@ class ConfigCacheSpec: QuickSpec {
             }
 
             describe("when the verification key is found locally") {
-                fetcher.fetchedConfig = ConfigModel(config: ["foo": "bar"], keyId: "aKey")
-                fetcher.fetchedConfig.signature = "aSig"
+                fetcher.fetchedConfig = ConfigModel(data: jsonData)
+                fetcher.fetchedConfig?.signature = "aSig"
                 let configCache = ConfigCache(fetcher: fetcher,
                                               poller: Poller(),
                                               cacheUrl: url,
@@ -285,8 +284,8 @@ class ConfigCacheSpec: QuickSpec {
                 }
             }
             describe("when the verification key is not found locally") {
-                fetcher.fetchedConfig = ConfigModel(config: ["foo": "bar"], keyId: "aKey")
-                fetcher.fetchedConfig.signature = "aSig"
+                fetcher.fetchedConfig = ConfigModel(data: jsonData)
+                fetcher.fetchedConfig?.signature = "aSig"
                 let keyStore = KeyStoreMock(contents: [:])
                 let configCache = ConfigCache(fetcher: fetcher,
                                               poller: Poller(),
@@ -305,7 +304,8 @@ class ConfigCacheSpec: QuickSpec {
                 }
 
                 it("adds the key after fetching it") {
-                    fetcher.fetchedKey = KeyModel(id: "aKey", key: "123", createdAt: "")
+                    let jsonData = (try? JSONSerialization.data(withJSONObject: ["id": "aKey", "key": "123", "createdAt": ""], options: []))!
+                    fetcher.fetchedKey = KeyModel(data: jsonData)
 
                     configCache.refreshFromRemote()
 
