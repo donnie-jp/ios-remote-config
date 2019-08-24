@@ -7,8 +7,10 @@ class APIClientSpec: QuickSpec {
         let foo: [String: String]
 
         init?(data: Data) {
-            let foo = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: String]
-            self.foo = foo ?? ["": ""]
+            guard let foo = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: String] else {
+                return nil
+            }
+            self.foo = foo
         }
     }
     override func spec() {

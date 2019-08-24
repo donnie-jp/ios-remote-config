@@ -25,7 +25,7 @@ class ConfigCacheSpec: QuickSpec {
 
             it("when cache file has contents the config is empty immediately after init returns") {
                 let url = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("foo")
-                NSDictionary(dictionary: ["foo": "bar"]).write(to: url, atomically: true)
+                NSDictionary(dictionary: ["body": ["foo": "bar"]]).write(to: url, atomically: true)
                 let configCache = ConfigCache(fetcher: fetcher, poller: Poller(), cacheUrl: url)
                 let fallback = "not found"
 
@@ -40,11 +40,12 @@ class ConfigCacheSpec: QuickSpec {
                 let jsonData = (try? JSONSerialization.data(withJSONObject: ["body": ["foo": "bar"]], options: []))!
 
                 beforeEach {
-                    NSDictionary(dictionary:
+                    let written = NSDictionary(dictionary:
                         ["config": jsonData,
                          "keyId": "1234",
                          "signature": "sigfoo"
                         ]).write(to: url, atomically: true)
+                    print("test data written to cache url \(url): \(String(describing: written))")
                 }
 
                 describe("key is found in key store") {
@@ -59,7 +60,7 @@ class ConfigCacheSpec: QuickSpec {
                                                       keyStore: keyStore,
                                                       verifier: verifier)
 
-                        expect(configCache.getConfig() as NSDictionary).toEventually(equal(["foo": "bar"] as NSDictionary), timeout: 1)
+                        expect(configCache.getConfig() as NSDictionary).toEventually(equal(["foo": "bar"] as NSDictionary), timeout: 10)
                     }
 
                     it("does not set the active config when verification fails") {
@@ -229,7 +230,7 @@ class ConfigCacheSpec: QuickSpec {
             let jsonData = (try? JSONSerialization.data(withJSONObject: ["body": ["foo": "bar"], "keyId": "aKey"], options: []))!
             let fetcher = FetcherMock(client: APIClient(), environment: Environment())
             let configCache = ConfigCache(fetcher: fetcher, poller: Poller())
-            let url = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("foo")
+            let url = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("bar")
             let verifier = VerifierMock()
 
             beforeEach {
@@ -261,7 +262,7 @@ class ConfigCacheSpec: QuickSpec {
                     configCache.refreshFromRemote()
 
                     let expected: [String: Any] = [
-                        "config": ["foo": "bar"],
+                        "config": jsonData,
                         "signature": "aSig",
                         "keyId": "aKey"
                     ]

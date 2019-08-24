@@ -21,7 +21,7 @@ internal class ConfigCache {
         self.verifier = verifier
 
         if let initialCacheContents = initialCacheContents,
-            let data = try? JSONSerialization.data(withJSONObject: initialCacheContents, options: []) {
+            let data = try? JSONSerialization.data(withJSONObject: ["body": initialCacheContents], options: []) {
             self.activeConfig = ConfigModel(data: data)
         }
         DispatchQueue.global(qos: .utility).async {
@@ -54,6 +54,35 @@ internal class ConfigCache {
         }
     }
 
+    // MARK: Get config methods
+    func getString(_ key: String, _ fallback: String) -> String {
+        guard let config = activeConfig?.config else {
+            return fallback
+        }
+        return config[key] ?? fallback
+    }
+
+    func getBoolean(_ key: String, _ fallback: Bool) -> Bool {
+        guard let config = activeConfig?.config, let value = config[key] else {
+            return fallback
+        }
+        return (value as NSString).boolValue
+    }
+
+    func getNumber(_ key: String, _ fallback: NSNumber) -> NSNumber {
+        guard
+            let config = activeConfig?.config,
+            let value = config[key] else {
+                return fallback
+        }
+        return numberFormatter.number(from: value) ?? fallback
+    }
+
+    func getConfig() -> [String: String] {
+        return activeConfig?.config ?? [:]
+    }
+
+    // MARK: Private helpers
     fileprivate func fetchConfig() {
         self.fetcher.fetchConfig { (result) in
             guard let configModel = result else {
@@ -129,35 +158,5 @@ extension ConfigCache {
                 resultHandler(verified)
             }
         }
-    }
-}
-
-// MARK: Get config methods
-extension ConfigCache {
-    func getString(_ key: String, _ fallback: String) -> String {
-        guard let config = activeConfig?.config else {
-            return fallback
-        }
-        return config[key] ?? fallback
-    }
-
-    func getBoolean(_ key: String, _ fallback: Bool) -> Bool {
-        guard let config = activeConfig?.config, let value = config[key] else {
-            return fallback
-        }
-        return (value as NSString).boolValue
-    }
-
-    func getNumber(_ key: String, _ fallback: NSNumber) -> NSNumber {
-        guard
-            let config = activeConfig?.config,
-            let value = config[key] else {
-                return fallback
-        }
-        return numberFormatter.number(from: value) ?? fallback
-    }
-
-    func getConfig() -> [String: String] {
-        return activeConfig?.config ?? [:]
     }
 }

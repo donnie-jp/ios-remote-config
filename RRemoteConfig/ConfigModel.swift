@@ -14,7 +14,7 @@ internal struct ConfigModel: Parsable {
         do {
             dictionary = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
         } catch let error {
-            print(error)
+            Logger.e(error.localizedDescription)
             return nil
         }
         self.jsonData = data
