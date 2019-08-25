@@ -37,7 +37,7 @@ class ConfigCacheSpec: QuickSpec {
                 let url = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("foo")
                 let verifier = VerifierMock()
                 let fetcher = Fetcher(client: APIClient(), environment: Environment())
-                let jsonData = (try? JSONSerialization.data(withJSONObject: ["body": ["foo": "bar"]], options: []))!
+                let jsonData = (try? JSONSerialization.data(withJSONObject: ["body": ["foo": "bar"], "keyId": "1234"], options: []))!
 
                 beforeEach {
                     let written = NSDictionary(dictionary:

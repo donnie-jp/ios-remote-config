@@ -22,9 +22,7 @@ internal class Fetcher {
                 var config = response.object as? ConfigModel
                 let headers = response.httpResponse.allHeaderFields as? [String: String]
                 config?.signature = headers?["Signature"]
-                if let etag = headers?["ETag"] {
-                    self.environment.etag = etag
-                }
+                self.environment.etag = headers?["Etag"]
                 completionHandler(config)
             case .failure(let error):
                 Logger.e("Config fetch \(String(describing: request.url)) error occurred: \(error.localizedDescription)")
